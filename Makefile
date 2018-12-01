@@ -20,9 +20,6 @@ fork:
 swtt:
 	cd ./src/euid && make swtt
 
-chroot:
-	cd ./src/chroot && make chroot
-
 run_setuid:
 	cd ./src/euid && make run_setuid
 

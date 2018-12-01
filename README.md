@@ -155,6 +155,24 @@ make[1]: Leaving directory '/home/upupming/lab1/src/euid'
 
 我们为了防范攻击，尽可能在使用完高权限之后永久放弃 `root` 权限，如果无法永久放弃，也要临时放弃 `root` 权限，以使权限最小化。
 
+使用 `root` 权限运行 `swtt` 效果如下：
+
+```bash
+root@mingtu:/home/upupming/lab1# make run_swtt
+cd ./src/euid && make run_swtt
+make[1]: Entering directory '/home/upupming/lab1/src/euid'
+./swtt
+当前用户的 uid 为 0
+临时抛弃权限，成功将用户切换为 1001
+当前 (ruid, euid, suid) = (0, 1001, 0)
+用户成功切换回来
+当前 (ruid, euid, suid) = (0, 0, 1001)
+用户彻底抛弃权限
+当前 (ruid, euid, suid) = (1001, 1001, 1001)
+./swtt: 无法恢复 euid（root 权限已被永久抛弃） - Operation not permitted
+make[1]: Leaving directory '/home/upupming/lab1/src/euid'
+```
+
 ##### `execl` 函数族
 
 `execl` 函数族中有多个函数，有环境变量和无环境变量的函数使用的差异如下：
