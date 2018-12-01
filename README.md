@@ -20,18 +20,20 @@
                 - [放弃 `root` 权限](#%E6%94%BE%E5%BC%83-root-%E6%9D%83%E9%99%90)
                 - [`execl` 函数族](#execl-%E5%87%BD%E6%95%B0%E6%97%8F)
                     - [`execve`](#execve)
+        - [`euid` 管理](#euid-%E7%AE%A1%E7%90%86)
         - [利用 `chroot` 搭建沙盒环境](#%E5%88%A9%E7%94%A8-chroot-%E6%90%AD%E5%BB%BA%E6%B2%99%E7%9B%92%E7%8E%AF%E5%A2%83)
             - [Ubuntu 下 `chroot` SSH 客户端](#ubuntu-%E4%B8%8B-chroot-ssh-%E5%AE%A2%E6%88%B7%E7%AB%AF)
                 - [准备基本 `chroot` 环境](#%E5%87%86%E5%A4%87%E5%9F%BA%E6%9C%AC-chroot-%E7%8E%AF%E5%A2%83)
                 - [配置 `chroot` 环境](#%E9%85%8D%E7%BD%AE-chroot-%E7%8E%AF%E5%A2%83)
+    - [参考资料](#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99)
 
 ## 实验要求
 
 ### euid 管理
 
-- [ ] 设想一种场景需要进行普通用户和 root 用户切换，设计程序实现 euid 的安全管理。
+- [x] 设想一种场景需要进行普通用户和 root 用户切换，设计程序实现 euid 的安全管理。
 
-- [ ] 配合第 3 章完成进程中 euid 的切换，实现 root 权限临时性和永久性管理，加强程序的安全性。
+- [x] 配合第 3 章完成进程中 euid 的切换，实现 root 权限临时性和永久性管理，加强程序的安全性。
 
 说明：1学时，不分组实现。
 
@@ -107,15 +109,37 @@
 
 设想一种场景，比如提供 http 网络服务，需要设置 `setuid` 位，并为该场景编制相应的代码。
 
-为相应的软件设置好 `setuid` 位即可，如果在一个程序中需要使用它，可以使用 `exec` 执行。
+为相应的软件设置好 `setuid` 位即可，如果在一个程序中需要使用它，可以使用 `exec` 执行。代码见 [swtt.cpp](./src/euid/swtt.cpp)。
 
 ##### `fork`
 
 用户 `fork` 进程后，父子进程的 `euid`、`ruid` 和 `suid` 均不会发生改变。
 
+```bash
+upupming@mingtu:~/lab1$ make run_fork
+cd ./src/euid && make run_fork
+make[1]: Entering directory '/home/upupming/lab1/src/euid'
+./fork
+当前用户的 uid 为 1000
+父进程中 (ruid, euid, suid) = (1000, 1000, 1000)
+子进程中 (ruid, euid, suid) = (1000, 1000, 1000)
+make[1]: Leaving directory '/home/upupming/lab1/src/euid'
+```
+
 ##### `execl`
 
 使用 `execl` 执行 `setuid` 的程序之后，`euid` 和 `suid` 都会变为文件的拥有者，`ruid` 保持不变。
+
+```bash
+upupming@mingtu:~/lab1$ make run_setuid
+cd ./src/euid && make run_setuid
+make[1]: Entering directory '/home/upupming/lab1/src/euid'
+./setuid
+执行 execl 之前 (ruid, euid, suid) = (1000, 1000, 1000)
+正在执行 execl 调用 show_current_id...
+当前 (ruid, euid, suid) = (1000, 1001, 1001)
+make[1]: Leaving directory '/home/upupming/lab1/src/euid'
+```
 
 ##### 放弃 `root` 权限
 
@@ -124,7 +148,7 @@
 <blockquote>
 只是当需要的时候才给予特权——片刻也不要多给。
 
-只要可能，使用无论什么您立即需要的特权，然后永久地放弃它们。一旦它们被永久放弃，后来的攻击者就不能以其他方式利用那些特权。例如，需要个别的 root 特权的程序可能以 root 身份启动（比如说，通过成为 setuid root）然后切换到以较少特权用户身份运行。这是很多 Internet 服务器（包括 Apache Web 服务器）所采用的方法。类 UNIX 系统不允许任何程序打开 0 到 1024 TCP/IP 端口；您必须拥有 root 特权。但是大部分服务器只是在启动的时候需要打开端口，以后就再也不需要特权了。一个方法是以 root 身份运行，尽可能快地打开需要特权的端口，然后永久去除 root 特权（包括进程所属的任何有特权的组）。也要尝试去除所有其他继承而来的特权；例如，尽快关 闭需要特定的特权才能打开的文件。
+只要可能，使用无论什么您立即需要的特权，然后永久地放弃它们。一旦它们被永久放弃，后来的攻击者就不能以其他方式利用那些特权。例如，需要个别的 root 特权的程序可能以 root 身份启动（比如说，通过成为 setuid root）然后切换到以较少特权用户身份运行。这是很多 Internet 服务器（包括 Apache Web 服务器）所采用的方法。类 UNIX 系统不允许任何程序打开 0 到 1024 TCP/IP 端口；您必须拥有 root 特权。但是大部分服务器只是在启动的时候需要打开端口，以后就再也不需要特权了。一个方法是以 root 身份运行，尽可能快地打开需要特权的端口，然后永久去除 root 特权（包括进程所属的任何有特权的组）。也要尝试去除所有其他继承而来的特权；例如，尽快关闭需要特定的特权才能打开的文件。
 
 如果您不能永久地放弃特权，那么您至少可以尽可能经常临时去除特权。这不如永久地去除特权好，因为如果攻击者可以控制您的程序，攻击者就可以重新启用特权并利用它。尽管如此，还是值得去做。很多攻击只有在它们欺骗有特权的程序做一些计划外的事情而且程序的特权被启用时才会成功（例如，通过创建不合常理的符号链接和硬链接）。 如果程序通常不启用它的特权，那么攻击者想利用这个程序就会更困难。
 </blockquote>
@@ -163,6 +187,69 @@ char *env[] = { "HOME=/usr/home", "LOGNAME=home", (char *)0 };
 ...
 ret = execve ("/bin/ls", cmd, env);
 ```
+
+### `euid` 管理
+
+在这一节，将完成用户切换和 `euid` 的安全管理。
+
+首先创建一个额外的用户：
+
+```bash
+sudo adduser doraemon
+```
+
+创建完之后在 `/etc/passwd` 中查看用户信息，可以看到两者的 `uid` 分别为 `1000` 和 `1001`。
+
+```txt
+upupming:x:1000:1000:Li Yiming,,,:/home/upupming:/bin/bash
+doraemon:x:1001:1001:Doraemon,,,:/home/doraemon:/bin/bash
+```
+
+我编写了一个 [`swtt.cpp`](./src/euid/swtt.cpp) 来切换用户。
+
+```bash
+upupming@mingtu:/mnt/DATA/Documents/2018Fall/ComputerSecurity/Labs/Lab1-file-permissions-and-virtual-env$ make euid
+g++ ./src/euid/swtt.cpp -o ./src/euid/swtt
+upupming@mingtu:/mnt/DATA/Documents/2018Fall/ComputerSecurity/Labs/Lab1-file-permissions-and-virtual-env$ make swtt
+./src/euid/swtt /usr/bin/id
+当前用户的 uid 为 1000
+./src/euid/swtt: 无法切换 euid - Operation not permitted
+Makefile:9: recipe for target 'swtt' failed
+make: *** [swtt] Error 1
+```
+
+发现函数中无法从当前用户 `1000`（upupming） 切换到 `1001`（doraemon）。
+
+我们需要将 `swtt` 的所有权转给用户 `doraemon` 并将其设置 `setuid` 位，最后让用户 `upupming` 运行 `swtt` 的时候才有权限修改 `euid` 为 `doraemon` 的 `euid`（`1001`）。
+
+下面是最后的运行结果（注意第一个 `make` 需要 `root` 权限）：
+
+```bash
+upupming@mingtu:~/lab1$ make euid
+g++ ./src/euid/swtt.cpp -o ./src/euid/swtt && sudo chown doraemon:doraemon ./src/euid/swtt && sudo chmod u+s ./src/euid/swtt
+upupming@mingtu:~/lab1$ make swtt
+./src/euid/swtt /usr/bin/id
+当前用户的 uid 为 1000
+成功将用户切换为 1001
+当前 (ruid, euid, suid) = (1000, 1001, 1000)
+```
+
+注意到最后一行显示 `suid` 是原来的 `1000`，这是因为我切换 uid 的时候调用的是：
+
+```c++
+setresuid(uid, 1001, uid)
+```
+
+这样就实现了“临时放弃权限”，下次可以使用 `suid` 恢复之前的 uid。
+
+在其中调用 `touch.sh` 创建了一个 `tempfile`，其权限如下：
+
+```bash
+upupming@mingtu:~/lab1$ ls src/euid/tempfile  -l
+-rw-r--r-- 1 upupming upupming 0 Dec  1 19:34 src/euid/tempfile
+```
+
+可见 `execl` 会修改 `euid` 为文件 `touch.sh` 所有者 `upupming` 的 uid。
 
 ### 利用 `chroot` 搭建沙盒环境
 
@@ -269,3 +356,7 @@ usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] [-b bind_address] [-c cipher_spec]
 整个过程已经记录在了 [`chroot.sh`](./src/chroot.sh) 文件中，可以直接运行。一个极小的沙盒环境已经保存在 `./src/chroot` 目录之下。
 
 当我们以 `sshtest` 用户运行在沙盒环境中时，是完全安全的。
+
+## 参考资料
+
+1. [https://www.geeksforgeeks.org/exec-family-of-functions-in-c/](https://www.geeksforgeeks.org/exec-family-of-functions-in-c/)
