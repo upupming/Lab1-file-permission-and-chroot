@@ -371,7 +371,7 @@ usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] [-b bind_address] [-c cipher_spec]
            [-w local_tun[:remote_tun]] [user@]hostname [command]
 ```
 
-整个过程已经记录在了 [`chroot.sh`](./src/chroot.sh) 文件中，可以直接运行。一个极小的沙盒环境已经保存在 `./src/chroot` 目录之下。
+整个过程已经记录在了 [`chroot.sh`](./src/chroot/chroot.sh) 文件中，可以直接运行。一个极小的沙盒环境已经保存在 `./src/chroot` 目录之下。
 
 当我们以 `sshtest` 用户运行在沙盒环境中时，是完全安全的。
 
