@@ -6,25 +6,37 @@
 #include <iostream>
 using namespace std;
 
+void ls_root() {
+    cout << "正在调用 ls /root..." << endl;
+    if(system("/bin/ls /root") != 0) {
+        cout << "调用失败：" << endl;
+    } else {
+        cout << "调用成功！" << endl;
+    }
+}
+
 int main (int argc, char *argv[]) {
-    uid_t uid =getuid();
+    uid_t ruid, euid, suid;
+    getresuid(&ruid, &euid, &suid);
+    // new uid to be changed
     uid_t new_uid = 1001;
     
-    cout << "当前用户的 uid 为 " << uid << endl;
+    cout << "当前 (ruid, euid, suid) = (" << ruid << ", " << euid << ", " << suid << ")" << endl;
+    ls_root();
 
     // 保存 uid 到 suid
-    if(setresuid(uid, new_uid, uid) < 0) {
+    if(setresuid(ruid, new_uid, euid) < 0) {
         cout << argv[0] << ": 无法切换 euid - " << strerror(errno) << endl;
         return 1;
     } 
     
-    uid_t ruid, euid, suid;
     cout << "临时抛弃权限，成功将用户切换为 " << new_uid << endl;
     if(getresuid(&ruid, &euid, &suid) < 0) {
         cout << strerror(errno) << endl;
         return 1;
     }
     cout << "当前 (ruid, euid, suid) = (" << ruid << ", " << euid << ", " << suid << ")" << endl;
+    ls_root();
 
     ////////////////////////////
     // 切换回来
@@ -38,6 +50,7 @@ int main (int argc, char *argv[]) {
     } 
     cout << "用户成功切换回来" << endl;
     cout << "当前 (ruid, euid, suid) = (" << ruid << ", " << euid << ", " << suid << ")" << endl;
+    ls_root();
     ///////////////////////////
 
     ////////////////////////////
@@ -52,6 +65,7 @@ int main (int argc, char *argv[]) {
     } 
     cout << "用户彻底抛弃权限" << endl;
     cout << "当前 (ruid, euid, suid) = (" << ruid << ", " << euid << ", " << suid << ")" << endl;
+    ls_root();
     ///////////////////////////
 
     ////////////////////////////
@@ -65,6 +79,7 @@ int main (int argc, char *argv[]) {
         return 1;
     }
     cout << "当前 (ruid, euid, suid) = (" << ruid << ", " << euid << ", " << suid << ")" << endl;
+    ls_root();
     ///////////////////////////
 
     cout << "正在调用 touch.sh..." << endl;

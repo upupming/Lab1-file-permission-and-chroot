@@ -15,7 +15,7 @@ fork:
 	${CC} fork.cpp -o fork
 
 swtt: swtt.cpp
-	${CC} swtt.cpp -o swtt && sudo chown doraemon:doraemon swtt && sudo chmod u+s swtt
+	${CC} swtt.cpp -o swtt
 	chmod +x touch.sh
 
 run_swtt: 
