@@ -417,6 +417,16 @@ bash-4.4# ls
 bin  dev  etc  lib  lib64  usr
 ```
 
+```bash
+bash-4.4# ./root/test.sh
+running ps
+Error, do this: mount -t proc proc /proc
+listing all open file descriptors
+ls: cannot access '/proc/6128/fd': No such file or directory
+opening port 49
+^Cbash-4.4# exit
+```
+
 在 `jail` 目录之下，无法看到外面的目录，也就无法修改外部的文件。
 
 ## 参考资料
