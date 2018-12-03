@@ -25,6 +25,7 @@
             - [Ubuntu 下 `chroot` SSH 客户端](#ubuntu-%E4%B8%8B-chroot-ssh-%E5%AE%A2%E6%88%B7%E7%AB%AF)
                 - [准备基本 `chroot` 环境](#%E5%87%86%E5%A4%87%E5%9F%BA%E6%9C%AC-chroot-%E7%8E%AF%E5%A2%83)
                 - [配置 `chroot` 环境](#%E9%85%8D%E7%BD%AE-chroot-%E7%8E%AF%E5%A2%83)
+            - [Ubuntu 下 `chroot` 使用 `bash`、`ls` 等](#ubuntu-%E4%B8%8B-chroot-%E4%BD%BF%E7%94%A8-bashls-%E7%AD%89)
     - [参考资料](#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99)
 
 ## 实验要求
@@ -39,8 +40,8 @@
 
 ### 搭建沙盒环境
 
-- [ ] 搭建安全的沙盒环境，在沙盒环境中提供必须的常见工具，并提供程序验证沙盒环境的安全性。
-- [ ] 配合第 3 章，实现系统中的虚拟化限制方法，实现安全的系统加固，测试虚拟化空间的加固程度。
+- [x] 搭建安全的沙盒环境，在沙盒环境中提供必须的常见工具，并提供程序验证沙盒环境的安全性。
+- [x] 配合第 3 章，实现系统中的虚拟化限制方法，实现安全的系统加固，测试虚拟化空间的加固程度。
 
 说明：3 学时，2 人一组，分组实现。
 
@@ -373,7 +374,50 @@ usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] [-b bind_address] [-c cipher_spec]
 
 整个过程已经记录在了 [`chroot.sh`](./src/chroot/chroot.sh) 文件中，可以直接运行。一个极小的沙盒环境已经保存在 `./src/chroot` 目录之下。
 
-当我们以 `sshtest` 用户运行在沙盒环境中时，是完全安全的。
+注意，这里我们没有 `cd` 进 jail 目录，这是不安全的，想要 `cd` 进 jail 目录并在其中运行 `chroot`，需要首先复制 `bash` 才行。
+
+
+
+#### Ubuntu 下 `chroot` 使用 `bash`、`ls` 等 
+
+查看依赖文件：
+
+```bash
+upupming@mingtu:~/lab1/src/chroot$ ldd /bin/bash
+        linux-vdso.so.1 (0x00007fff8c55f000)
+        libtinfo.so.5 => /lib/x86_64-linux-gnu/libtinfo.so.5 (0x00007fea7a22e000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fea7a02a000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fea79c39000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fea7a772000)
+
+
+upupming@mingtu:~/lab1/src/chroot$ ldd /bin/ls
+        linux-vdso.so.1 (0x00007ffd1b315000)
+        libselinux.so.1 => /lib/x86_64-linux-gnu/libselinux.so.1 (0x00007fb89fed7000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fb89fae6000)
+        libpcre.so.3 => /lib/x86_64-linux-gnu/libpcre.so.3 (0x00007fb89f874000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007fb89f670000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fb8a0321000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fb89f451000)
+```
+
+复制这些依赖文件，以及 `bash`、`ls` 等文件即可。
+
+验证安全性如下：
+
+```bash
+upupming@mingtu:~/lab1/src/chroot$ make chroot
+bash chroot.sh
+bash-4.4# whoami
+root
+bash-4.4# ls
+bin  dev  etc  lib  lib64  usr
+bash-4.4# cd ../..
+bash-4.4# ls
+bin  dev  etc  lib  lib64  usr
+```
+
+在 `jail` 目录之下，无法看到外面的目录，也就无法修改外部的文件。
 
 ## 参考资料
 

@@ -1,3 +1,4 @@
+############ ssh ################
 # 创建沙盒目录，复制 ssh
 mkdir -p ./jail/usr/bin
 install -C /usr/bin/ssh ./jail/usr/bin/
@@ -30,5 +31,15 @@ cp /etc/{passwd,group} ./jail/etc
 # 安装解析 uid 的库
 install -C /lib/x86_64-linux-gnu/libnss_* ./jail/lib/x86_64-linux-gnu/
 
-# 在沙盒中运行 ssh
-sudo chroot ./jail /usr/bin/ssh -V
+############ bash ################
+install -C /lib/x86_64-linux-gnu/libtinfo.so.5 ./jail/lib/x86_64-linux-gnu/
+mkdir -p ./jail/bin
+install -C /bin/bash ./jail/bin/
+
+############ ls, whoami ##################
+install -C /bin/ls ./jail/bin/
+install -C /usr/bin/whoami ./jail/usr/bin/
+
+# chroot 到沙盒
+cd ./jail
+sudo chroot . 
