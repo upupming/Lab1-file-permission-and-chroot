@@ -6,7 +6,7 @@ install -C /usr/bin/ssh ./jail/usr/bin/
 # 创建 /usr/lib
 mkdir -p ./jail/usr/lib/x86_64-linux-gnu
 # 安装依赖库
-install -C /usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2 /usr/lib/x86_64-linux-gnu/libkrb5.so.3 /usr/lib/x86_64-linux-gnu/libk5crypto.so.3 /usr/lib/x86_64-linux-gnu/libkrb5support.so.0 /lib/x86_64-linux-gnu/libprocps.so.6 /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libsystemd.so.0 /lib/x86_64-linux-gnu/librt.so.1 /lib/x86_64-linux-gnu/liblzma.so.5 /usr/lib/x86_64-linux-gnu/liblz4.so.1 ./jail/usr/lib/x86_64-linux-gnu
+install -C /usr/lib/x86_64-linux-gnu/libgssapi_krb5.so.2 /usr/lib/x86_64-linux-gnu/libkrb5.so.3 /usr/lib/x86_64-linux-gnu/libk5crypto.so.3 /usr/lib/x86_64-linux-gnu/libkrb5support.so.0 /lib/x86_64-linux-gnu/libprocps.so.6 /lib/x86_64-linux-gnu/libdl.so.2 /lib/x86_64-linux-gnu/libsystemd.so.0 /lib/x86_64-linux-gnu/librt.so.1 /lib/x86_64-linux-gnu/liblzma.so.5 /usr/lib/x86_64-linux-gnu/liblz4.so.1 /lib/x86_64-linux-gnu/libmount.so.1 /lib/x86_64-linux-gnu/libblkid.so.1 ./jail/usr/lib/x86_64-linux-gnu
 
 # 创建 /lib
 mkdir -p ./jail/lib/x86_64-linux-gnu
@@ -29,7 +29,7 @@ mkdir ./jail/etc
 cp /etc/{passwd,group} ./jail/etc
 
 # 安装解析 uid 的库
-install -C /lib/x86_64-linux-gnu/libnss_* ./jail/lib/x86_64-linux-gnu/
+install -C /lib/x86_64-linux-gnu/libnss_* /lib/x86_64-linux-gnu/libuuid.so.1 ./jail/lib/x86_64-linux-gnu/
 
 ############ bash ################
 install -C /lib/x86_64-linux-gnu/libtinfo.so.5 ./jail/lib/x86_64-linux-gnu/
@@ -39,6 +39,8 @@ install -C /bin/bash ./jail/bin/
 ############ ls, whoami ##################
 install -C /bin/ls ./jail/bin/
 install -C /bin/ps ./jail/bin/
+install -C /bin/mount ./jail/bin/
+mkdir ./jail/proc
 install -C /bin/nc ./jail/bin/
 install -C /usr/bin/whoami ./jail/usr/bin/
 
@@ -47,3 +49,4 @@ cd ./jail
 mkdir root
 cp ../test.sh root/test.sh
 sudo chroot . 
+mount -t proc proc /proc

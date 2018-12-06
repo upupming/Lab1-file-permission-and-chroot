@@ -26,6 +26,9 @@
                 - [准备基本 `chroot` 环境](#%E5%87%86%E5%A4%87%E5%9F%BA%E6%9C%AC-chroot-%E7%8E%AF%E5%A2%83)
                 - [配置 `chroot` 环境](#%E9%85%8D%E7%BD%AE-chroot-%E7%8E%AF%E5%A2%83)
             - [Ubuntu 下 `chroot` 使用 `bash`、`ls` 等](#ubuntu-%E4%B8%8B-chroot-%E4%BD%BF%E7%94%A8-bashls-%E7%AD%89)
+            - [未 `cd` 进指定目录的风险](#%E6%9C%AA-cd-%E8%BF%9B%E6%8C%87%E5%AE%9A%E7%9B%AE%E5%BD%95%E7%9A%84%E9%A3%8E%E9%99%A9)
+            - [未放弃权限的影响](#%E6%9C%AA%E6%94%BE%E5%BC%83%E6%9D%83%E9%99%90%E7%9A%84%E5%BD%B1%E5%93%8D)
+            - [放弃权限，并进入 `jail`，再 `chroot`](#%E6%94%BE%E5%BC%83%E6%9D%83%E9%99%90%E5%B9%B6%E8%BF%9B%E5%85%A5-jail%E5%86%8D-chroot)
     - [参考资料](#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99)
 
 ## 实验要求
@@ -376,9 +379,7 @@ usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] [-b bind_address] [-c cipher_spec]
 
 注意，这里我们没有 `cd` 进 jail 目录，这是不安全的，想要 `cd` 进 jail 目录并在其中运行 `chroot`，需要首先复制 `bash` 才行。
 
-
-
-#### Ubuntu 下 `chroot` 使用 `bash`、`ls` 等 
+#### Ubuntu 下 `chroot` 使用 `bash`、`ls` 等
 
 查看依赖文件：
 
@@ -427,7 +428,81 @@ opening port 49
 ^Cbash-4.4# exit
 ```
 
+加入 `mount` 修复 `ps` 之后：
+
+```bash
+bash-4.4# ps
+  PID TTY          TIME CMD
+ 6876 ?        00:00:00 sudo
+ 6877 ?        00:00:00 bash
+ 6878 ?        00:00:00 ps
+```
+
+文件描述符打印结果，打开端口的结果：
+
+```bash
+bash-4.4# ./root/test.sh
+running ps
+  PID  EUID  RUID  SUID  EGID  RGID  SGID CMD
+ 6876     0     0     0     0     0     0 sudo chroot .
+ 6877     0     0     0     0     0     0 /bin/bash -i
+ 7097     0     0     0     0     0     0 /bin/bash -i
+ 7098     0     0     0     0     0     0 ps -o pid,euid,ruid,suid,egid,rgid,sgid,cmd
+listing all open file descriptors
+total 0
+dr-x------ 2 root root  0 Dec  6 01:21 .
+dr-xr-xr-x 9 root root  0 Dec  6 01:21 ..
+lrwx------ 1 root root 64 Dec  6 01:21 0 -> /dev/pts/0
+lrwx------ 1 root root 64 Dec  6 01:21 1 -> /dev/pts/0
+lrwx------ 1 root root 64 Dec  6 01:21 2 -> /dev/pts/0
+lr-x------ 1 root root 64 Dec  6 01:21 254 -> /root/test.sh
+lrwx------ 1 root root 64 Dec  6 01:21 255 -> /dev/pts/0
+opening port 49
+```
+
+文件描述符只有 `test.sh` 一个用户文件，是安全的。打开 `1024` 以下的端口 `49` 成功，这是因为当前有 `root` 权限。我们可以在之后进行权限放弃。
+
 在 `jail` 目录之下，无法看到外面的目录，也就无法修改外部的文件。
+
+#### 未 `cd` 进指定目录的风险
+
+运行：
+
+```bash
+upupming@mingtu:~/lab1/src/chroot$ make run_chroot_as_root
+make[8]: Entering directory '/home/upupming/lab1/src/chroot'
+sudo ./chroot
+当前用户的 (ruid, euid, suid) = (0, 0, 0)
+shell-init: error retrieving current directory: getcwd: cannot access parent directories: No such file or directory
+bash-4.4# ls
+job-working-directory: error retrieving current directory: getcwd: cannot access parent directories:No such file or directory
+Makefile  chroot  chroot.cpp  chroot.sh  jail  test.sh
+bash-4.4# cd ..
+chdir: error retrieving current directory: getcwd: cannot access parent directories: No such file ordirectory
+```
+
+当前并没有进入到 `jail` 目录之下，而只是到达了可执行文件 `chroot` 所在的目录，运行 `ls` 命令可以看到所有外面的文件，不过 `cd` 命令是无法切换到上级目录的，但是也回报率这些不必要的文件，不安全。
+
+#### 未放弃权限的影响
+
+从上面的结果看出 `chroot` 必须以 `root` 身份运行，之后要放弃权限才具有更好的安全性。
+
+此时因为未放弃权限，用户具有 `root` 权限，可以随意操作 `jail` 内任意文件，不太安全。
+
+#### 放弃权限，并进入 `jail`，再 `chroot`
+
+```bash
+upupming@mingtu:~/lab1/src/chroot$ make run_chroot_as_root_with_cd_and_abandon_permission
+make[8]: Entering directory '/home/upupming/lab1/src/chroot'
+sudo ./chroot cd-into-jail abandon-permission
+当前用户的 (ruid, euid, suid) = (32576, 1000, 1000)
+bash-4.4$ ls
+bin  dev  etc  lib  lib64  root  usr
+bash-4.4$ pwd
+/
+```
+
+这样就看不到外面的文件，同时权限较低，比较安全。
 
 ## 参考资料
 

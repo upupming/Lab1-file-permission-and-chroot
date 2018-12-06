@@ -4,6 +4,16 @@ all: create_files ls fork swtt setuid
 
 chroot:
 	cd ./src/chroot && make chroot
+cpp_chroot:
+	cd ./src/chroot && make cpp_chroot
+run_chroot:
+	cd ./src/chroot && make run_chroot
+run_chroot_with_cd:
+	cd ./src/chroot && make run_chroot_with_cd
+run_chroot_as_root_with_cd:
+	cd ./src/chroot && make run_chroot_as_root_with_cd
+run_chroot_as_root_with_cd_and_abandon_permission:
+	cd ./src/chroot && make run_chroot_as_root_with_cd_and_abandon_permission
 
 create_files:
 	cd ./src/permissions && make create_files
