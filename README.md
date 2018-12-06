@@ -2,7 +2,7 @@
 
 |学号|姓名|日期|
 |:-:|:-:|:-:|
-|1160300625|李一鸣||
+|1160300625|李一鸣|2018 年 12 月 6 日|
 
 - [计算机系统安全实验一](#%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%B3%BB%E7%BB%9F%E5%AE%89%E5%85%A8%E5%AE%9E%E9%AA%8C%E4%B8%80)
     - [实验要求](#%E5%AE%9E%E9%AA%8C%E8%A6%81%E6%B1%82)
@@ -25,7 +25,7 @@
             - [Ubuntu 下 `chroot` SSH 客户端](#ubuntu-%E4%B8%8B-chroot-ssh-%E5%AE%A2%E6%88%B7%E7%AB%AF)
                 - [准备基本 `chroot` 环境](#%E5%87%86%E5%A4%87%E5%9F%BA%E6%9C%AC-chroot-%E7%8E%AF%E5%A2%83)
                 - [配置 `chroot` 环境](#%E9%85%8D%E7%BD%AE-chroot-%E7%8E%AF%E5%A2%83)
-            - [Ubuntu 下 `chroot` 使用 `bash`、`ls` 等](#ubuntu-%E4%B8%8B-chroot-%E4%BD%BF%E7%94%A8-bashls-%E7%AD%89)
+            - [Ubuntu 下 `chroot` 使用 `bash`、`ls`、`ps` 等](#ubuntu-%E4%B8%8B-chroot-%E4%BD%BF%E7%94%A8-bashlsps-%E7%AD%89)
             - [未 `cd` 进指定目录的风险](#%E6%9C%AA-cd-%E8%BF%9B%E6%8C%87%E5%AE%9A%E7%9B%AE%E5%BD%95%E7%9A%84%E9%A3%8E%E9%99%A9)
             - [未放弃权限的影响](#%E6%9C%AA%E6%94%BE%E5%BC%83%E6%9D%83%E9%99%90%E7%9A%84%E5%BD%B1%E5%93%8D)
             - [放弃权限，并进入 `jail`，再 `chroot`](#%E6%94%BE%E5%BC%83%E6%9D%83%E9%99%90%E5%B9%B6%E8%BF%9B%E5%85%A5-jail%E5%86%8D-chroot)
@@ -179,7 +179,7 @@ make[1]: Leaving directory '/home/upupming/lab1/src/euid'
 
 ##### `execl` 函数族
 
-`execl` 函数族中有多个函数，有环境变量和无环境变量的函数使用的差异如下：
+Linux 中，并不存在 `exec` 函数，`exec` 指的是一组函数，一共有 7 个，用于在进程中调用可执行文件或脚本文件。
 
 ```c
 #include <unistd.h>
@@ -196,6 +196,16 @@ int fexecve(int fd, char *const argv[], char *const envp[]);
 ```
 
 可以看到 `execve` 和 `fexecve` 是有环境变量的函数。具体的例子参见 [exec](http://pubs.opengroup.org/onlinepubs/9699919799/functions/exec.html)：
+
+- 只有 `execve` 才是真正意义上的系统调用，其他都是在此基础上经过包装的库函数。
+
+- `execl...` 参数为一个 **l**ist，接受很多个参数，以 `NULL` 结束。
+- `execv...` 参数为一个 **v**ector，接受一个参数数组，也是以 `NULL` 结束。
+
+- `...p` 表示在环境变量 `PATH` 目录里查找要执行的可执行文件。我们可以直接这样调用 `execlp("ls", ...)`，这比 `execl("/bin/ls")` 更简单，后者要求第一个参数必须是一个完整的路径。
+- `...e` 这两个函数可以给可执行文件指定环境变量。其他的函数基于这两个函数封装而成，将默认的环境变量不做任何修改地传给 `...e`。
+
+- 返回值 成功不返回，失败返回 `-1` 并设置 `errno`，由于 `exec` 族函数很容易出错，我们要在调用的函数中对返回值加以判断。
 
 ###### `execve`
 
@@ -379,7 +389,7 @@ usage: ssh [-1246AaCfGgKkMNnqsTtVvXxYy] [-b bind_address] [-c cipher_spec]
 
 注意，这里我们没有 `cd` 进 jail 目录，这是不安全的，想要 `cd` 进 jail 目录并在其中运行 `chroot`，需要首先复制 `bash` 才行。
 
-#### Ubuntu 下 `chroot` 使用 `bash`、`ls` 等
+#### Ubuntu 下 `chroot` 使用 `bash`、`ls`、`ps` 等
 
 查看依赖文件：
 
@@ -402,7 +412,7 @@ upupming@mingtu:~/lab1/src/chroot$ ldd /bin/ls
         libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007fb89f451000)
 ```
 
-复制这些依赖文件，以及 `bash`、`ls` 等文件即可。
+复制这些依赖文件，以及 `bash`、`ls`、`ps` 等文件即可。
 
 验证安全性如下：
 
